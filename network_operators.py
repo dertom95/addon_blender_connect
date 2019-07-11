@@ -1,5 +1,5 @@
 import bpy
-from . network import StartNetwork,StopNetwork,AddListener
+from . BConnectNetwork import StartNetwork,StopNetwork,AddListener,Publish
 
 class Test_OT_Operator(bpy.types.Operator):
     bl_idname = "view3d.cursor_center"

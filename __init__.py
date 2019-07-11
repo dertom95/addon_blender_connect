@@ -11,13 +11,25 @@ bl_info = {
 
 import bpy
 
-from . test_op import Test_OT_Operator
-from . test_panel import Test_PT_Panel
-from . network import PubSubNetwork,StartNetwork
+from . network_operators import BCONNECT_OT_control
+from . network_ui import BCONNECT_PT_panel
 
-StartNetwork()
 
-classes =(Test_OT_Operator, Test_PT_Panel)
+class BlenderConnectSettings(bpy.types.PropertyGroup):
+    log_network : bpy.props.BoolProperty(name="log the textual network-traffic")
 
-register, unregister = bpy.utils.register_classes_factory(classes)
+classes =(BCONNECT_OT_control, BCONNECT_PT_panel,BlenderConnectSettings)
+
+defRegister, defUnregister = bpy.utils.register_classes_factory(classes)
+
+def register():
+    defRegister()
+    bpy.types.World.blender_connect_settings = bpy.props.PointerProperty(type=BlenderConnectSettings)
+
+def unregister():
+    defUnregister()
+    del bpy.types.World.blender_connect_settings
+
+if __name__ == "__main__":
+    register()
     
