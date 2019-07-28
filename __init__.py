@@ -1,3 +1,12 @@
+found_blender = False
+try:
+    import bpy
+    from . network_operators import BCONNECT_OT_control
+    from . network_ui import BCONNECT_PT_panel
+    found_blender = True
+except:
+    pass
+
 bl_info = {
     "name": "Blender Connect",
     "description": "Connect to a special ZMQ-Node for communicating with the outer world",
@@ -9,18 +18,15 @@ bl_info = {
     "wiki_url": "",
     "category": "Object" }
 
-import bpy
-
-from . network_operators import BCONNECT_OT_control
-from . network_ui import BCONNECT_PT_panel
 
 
-class BlenderConnectSettings(bpy.types.PropertyGroup):
-    log_network : bpy.props.BoolProperty(name="log the textual network-traffic")
+if found_blender:
+    class BlenderConnectSettings(bpy.types.PropertyGroup):
+        log_network : bpy.props.BoolProperty(name="log the textual network-traffic")
 
-classes =(BCONNECT_OT_control, BCONNECT_PT_panel,BlenderConnectSettings)
+    classes =(BCONNECT_OT_control, BCONNECT_PT_panel,BlenderConnectSettings)
 
-defRegister, defUnregister = bpy.utils.register_classes_factory(classes)
+    defRegister, defUnregister = bpy.utils.register_classes_factory(classes)
 
 def register():
     defRegister()
@@ -29,7 +35,4 @@ def register():
 def unregister():
     defUnregister()
     del bpy.types.World.blender_connect_settings
-
-if __name__ == "__main__":
-    register()
     

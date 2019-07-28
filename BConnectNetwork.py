@@ -1,4 +1,4 @@
-import zmq,threading,time,traceback
+import zmq,threading,time,traceback,json
 
 pubsubNetwork = None
 showLog = True
@@ -38,13 +38,16 @@ class PubSubNetwork:
     # send data to the forwarder with a given topic
     def publish(self,topic,messagedata):
         print("SEND:%s %s" % (topic, messagedata))
-        self.socket.send_multipart([str.encode(topic),messagedata])
+        if type(topic) is str:
+            topic = str.encode(topic)
+        self.socket.send_multipart([topic,messagedata])
         print("Sent....")
         #self.socket.send_string( "%s %s" % (topic, messagedata))
 
     def add_listener(self,topicName, func):
-        if (not isinstance(topicName,str)):
+        if (type(topicName) is bytes):
             topicName = str(topicName,"utf-8")
+
         if topicName not in self.listeners:
             self.listeners[topicName]=[]
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, str.encode(topicName))
@@ -92,9 +95,12 @@ class PubSubNetwork:
                     for l in self.listeners[topic]:
                         print("--2")
                         try:
-                            if (datatype == "text"):
+                            if datatype == "text":
                                 print("--3")
                                 l(topic,subtype,str(data,"utf-8"))
+                            elif datatype == "json":
+                                jsonAsDict = json.loads(str(data,"utf-8"))
+                                l(topic,subtype,jsonAsDict)
                             elif (datatype == "bin"):
                                 l(topic,subtype,data);
                             else:
@@ -133,8 +139,9 @@ def AddListener(topic,func):
     pubsubNetwork.add_listener(topic,func)
 
 
-def Publish(topic,data):
-    pubsubNetwork.publish(topic,data)
+def Publish(topic,subtype,datatype,data):
+    full_topic = "%s %s %s" % (topic,subtype,datatype)
+    pubsubNetwork.publish(full_topic,data)
 
 def SetShowLog(showIt):
     global showLog

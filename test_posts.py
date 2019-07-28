@@ -13,5 +13,5 @@ AddListener("blender",Incoming)
 time.sleep(1)
 
 while True:
-    Publish("blender kick text",b"f95")
+    Publish("blender","kick","text",b"f95")
     time.sleep(5)  
