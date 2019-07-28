@@ -20,12 +20,14 @@ class PubSubNetwork:
 
     subscribeSocket = None
 
-    def __init__(self,subPort="5559",pubPort="5560"):
+    def __init__(self,subPort="5559",pubPort="5560",initialFilter=b"all",startThreads=True):
         self.forwarderPubPort = pubPort
         self.forwarderSubPort = subPort
-
+        self.initialFilter = initialFilter
+        print("init %s %s" %(initialFilter,startThreads))
         self.initPublisherSocket()
-        self.start_threads()
+        if startThreads:
+            self.start_threads()
 
     def initPublisherSocket(self):
         self.context = zmq.Context()
@@ -37,10 +39,12 @@ class PubSubNetwork:
     def publish(self,topic,messagedata):
         print("SEND:%s %s" % (topic, messagedata))
         self.socket.send_multipart([str.encode(topic),messagedata])
+        print("Sent....")
         #self.socket.send_string( "%s %s" % (topic, messagedata))
 
     def add_listener(self,topicName, func):
-        topicName = str(topicName,"utf-8")
+        if (not isinstance(topicName,str)):
+            topicName = str(topicName,"utf-8")
         if topicName not in self.listeners:
             self.listeners[topicName]=[]
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, str.encode(topicName))
@@ -58,7 +62,6 @@ class PubSubNetwork:
             frontend.bind("tcp://*:%s" % self.forwarderSubPort)
 
             frontend.setsockopt(zmq.SUBSCRIBE, b"")
-
             # Socket facing services
             backend = context.socket(zmq.PUB)
             backend.bind("tcp://*:%s" % self.forwarderPubPort)
@@ -72,10 +75,10 @@ class PubSubNetwork:
             # Socket to talk to server
             context = zmq.Context()
             self.subscribeSocket = context.socket(zmq.SUB)
-            print ("Collecting updates from server...")
+            print ("Collecting updates from server...%s" % self.forwarderSubPort)
             self.subscribeSocket.connect ("tcp://localhost:%s" % self.forwarderPubPort)
-            topicfilter = b"blender"
-            self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, topicfilter)
+            
+            self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, self.initialFilter)
             while True:
                 info,data = self.subscribeSocket.recv_multipart()
                 print("INCOMING")
@@ -83,7 +86,6 @@ class PubSubNetwork:
                 
                 if showLog:
                     print ("network: Topic:%s Subtype:%s dataType:%s"%(topic, subtype,datatype))
-
                 print("listeners %s" %self.listeners)
                 if topic in self.listeners.keys():
                     print("--1")
@@ -112,11 +114,12 @@ class PubSubNetwork:
         self.forwarderSubscriberRunning=True
 
 
-def StartNetwork():
+def StartNetwork(subPort="5559",pubPort="5560",initialFilter=b"",startThreads=True):
     print("STARTING BConnect")
     global pubsubNetwork
     if not pubsubNetwork:
-        pubsubNetwork = PubSubNetwork()
+        print("ST%s %s" % (startThreads,initialFilter))
+        pubsubNetwork = PubSubNetwork(subPort,pubPort,initialFilter,startThreads)
 
 def StopNetwork():
     print("Stop network not supported atm")
@@ -139,3 +142,7 @@ def SetShowLog(showIt):
 
 def NetworkRunning():
     return pubsubNetwork and pubsubNetwork.forwarderSubscriberRunning
+
+#StartNetwork()
+#while True:
+#    a=0
