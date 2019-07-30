@@ -102,6 +102,7 @@ class PubSubNetwork:
                                 jsonAsDict = json.loads(str(data,"utf-8"))
                                 l(topic,subtype,jsonAsDict)
                             elif (datatype == "bin"):
+                                print("received data-blob length:%s" % len(data))
                                 l(topic,subtype,data);
                             else:
                                 l(topic,subtype,data)
@@ -110,11 +111,13 @@ class PubSubNetwork:
 
 
         self.forwarderThread = threading.Thread(target=thread_forwarder)
+        self.forwarderThread.setName("blender-connect-forwarder")
         self.forwarderThread.setDaemon(True)
         self.forwarderThread.start()
         self.forwarderRunning = True
 
         self.forwarderSubscriberThread = threading.Thread(target=thread_forwarder_subscriber)
+        self.forwarderSubscriberThread.setName("blender-connect-subscriber")
         self.forwarderSubscriberThread.setDaemon(True)
         self.forwarderSubscriberThread.start()
         self.forwarderSubscriberRunning=True
