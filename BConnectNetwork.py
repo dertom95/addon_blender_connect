@@ -36,11 +36,14 @@ class PubSubNetwork:
         self.socket.connect("tcp://localhost:%s" % self.forwarderSubPort)
 
     # send data to the forwarder with a given topic
-    def publish(self,topic,messagedata):
+    def publish(self,topic,meta,messagedata):
         print("SEND:%s %s" % (topic, messagedata))
         if type(topic) is str:
             topic = str.encode(topic)
-        self.socket.send_multipart([topic,messagedata])
+        if type(meta) is str:
+            meta = str.encode(meta)
+
+        self.socket.send_multipart([topic,meta,messagedata])
         print("Sent....")
         #self.socket.send_string( "%s %s" % (topic, messagedata))
 
@@ -83,10 +86,15 @@ class PubSubNetwork:
             
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, self.initialFilter)
             while True:
-                info,data = self.subscribeSocket.recv_multipart()
+                info,meta,data = self.subscribeSocket.recv_multipart()
                 print("INCOMING")
                 topic, subtype, datatype = str(info,"utf-8").split()
-                
+                meta = str(meta,"utf-8")
+                if meta =="":
+                    meta=None
+                else:
+                    meta = json.loads(meta)
+
                 if showLog:
                     print ("network: Topic:%s Subtype:%s dataType:%s"%(topic, subtype,datatype))
                 print("listeners %s" %self.listeners)
@@ -97,15 +105,15 @@ class PubSubNetwork:
                         try:
                             if datatype == "text":
                                 print("--3")
-                                l(topic,subtype,str(data,"utf-8"))
+                                l(topic,subtype,meta,str(data,"utf-8"))
                             elif datatype == "json":
                                 jsonAsDict = json.loads(str(data,"utf-8"))
-                                l(topic,subtype,jsonAsDict)
+                                l(topic,subtype,meta,jsonAsDict)
                             elif (datatype == "bin"):
                                 print("received data-blob length:%s" % len(data))
-                                l(topic,subtype,data);
+                                l(topic,subtype,meta,data);
                             else:
-                                l(topic,subtype,data)
+                                l(topic,subtype,meta,data)
                         except Exception:
                             print(traceback.format_exc())
 
@@ -142,9 +150,9 @@ def AddListener(topic,func):
     pubsubNetwork.add_listener(topic,func)
 
 
-def Publish(topic,subtype,datatype,data):
+def Publish(topic,subtype,datatype,data,meta=""):
     full_topic = "%s %s %s" % (topic,subtype,datatype)
-    pubsubNetwork.publish(full_topic,data)
+    pubsubNetwork.publish(full_topic,meta,data)
 
 def SetShowLog(showIt):
     global showLog
