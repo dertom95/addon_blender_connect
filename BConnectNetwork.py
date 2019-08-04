@@ -37,7 +37,7 @@ class PubSubNetwork:
 
     # send data to the forwarder with a given topic
     def publish(self,topic,meta,messagedata):
-        print("SEND:%s %s" % (topic, messagedata))
+        #print("SEND:%s %s" % (topic, messagedata))
         if type(topic) is str:
             topic = str.encode(topic)
         if type(meta) is str:
@@ -87,8 +87,8 @@ class PubSubNetwork:
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, self.initialFilter)
             while True:
                 info,meta,data = self.subscribeSocket.recv_multipart()
-                print("INCOMING")
                 topic, subtype, datatype = str(info,"utf-8").split()
+                print("INCOMING topic:%s subtype:%s datatype:%s" % (topic,subtype,datatype))
                 meta = str(meta,"utf-8")
                 if meta =="":
                     meta=None
@@ -100,8 +100,20 @@ class PubSubNetwork:
                 print("listeners %s" %self.listeners)
                 if topic in self.listeners.keys():
                     print("--1")
-                    for l in self.listeners[topic]:
+                    topicListeners = self.listeners[topic]
+                    removeList = []
+                    for l in topicListeners:
                         print("--2")
+                        
+                        ## TODO: Find a better sanity test to see if the reference is valid. (What an insane sanity-check ;) )
+                        # try:
+                        #     check = hasattr(l.__self__,"__blenderconnect_tester")
+                        # except ReferenceError:
+                        #     removeList.append(l)
+                        #     continue
+                        # except:
+                        #     pass
+
                         try:
                             if datatype == "text":
                                 print("--3")
@@ -114,9 +126,17 @@ class PubSubNetwork:
                                 l(topic,subtype,meta,data);
                             else:
                                 l(topic,subtype,meta,data)
+                        except ReferenceError:
+                            print("!!Referror!! removing element: %s" % str(l));
+                            removeList.append(l)
                         except Exception:
+                            print("Listener error for ")
                             print(traceback.format_exc())
-
+                    if (len(removeList)>0):
+                        for removeElement in removeList:
+                            topicListeners.remove(removeElement)
+                        
+                        
 
         self.forwarderThread = threading.Thread(target=thread_forwarder)
         self.forwarderThread.setName("blender-connect-forwarder")
