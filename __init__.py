@@ -1,7 +1,7 @@
 found_blender = False
 try:
     import bpy
-    from . network_operators import BCONNECT_OT_control
+    from . network_operators import BCONNECT_OT_control, BCONNECT_OT_publish
     from . network_ui import BCONNECT_PT_panel
     found_blender = True
 except:
@@ -19,12 +19,14 @@ bl_info = {
     "category": "Object" }
 
 
+defRegister = None
+defUnregister = None
 
 if found_blender:
     class BlenderConnectSettings(bpy.types.PropertyGroup):
         log_network : bpy.props.BoolProperty(name="log the textual network-traffic")
 
-    classes =(BCONNECT_OT_control, BCONNECT_PT_panel,BlenderConnectSettings)
+    classes =(BCONNECT_OT_control, BCONNECT_PT_panel,BlenderConnectSettings,BCONNECT_OT_publish)
 
     defRegister, defUnregister = bpy.utils.register_classes_factory(classes)
 

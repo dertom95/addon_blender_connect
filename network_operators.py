@@ -10,6 +10,20 @@ class Test_OT_Operator(bpy.types.Operator):
         bpy.ops.view3d.snap_cursor_to_center()
         return {'FINISHED'}
 
+class BCONNECT_OT_publish(bpy.types.Operator):
+    bl_idname = "bconnect.publish"
+    bl_label = "publish"
+    bl_description = "publish data to bconnect-network"
+
+    topic : bpy.props.StringProperty()
+    subtype : bpy.props.StringProperty()
+    datatype: bpy.props.StringProperty()
+    meta: bpy.props.StringProperty()
+    data : bpy.props.StringProperty()
+
+    def execute(self,context):
+        Publish(self.topic,self.subtype,self.datatype,self.data,self.meta)
+        return {'FINISHED'}
 
 class BCONNECT_OT_control(bpy.types.Operator):
     bl_idname = "bconnect.control"
