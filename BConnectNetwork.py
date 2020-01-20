@@ -1,4 +1,4 @@
-import zmq,threading,time,traceback,json
+import zmq,threading,time,traceback,json,random
 
 pubsubNetwork = None
 showLog = True
@@ -17,6 +17,7 @@ class PubSubNetwork:
 
     listeners = {}
 
+    sessionID = random.randint(1000000,9999999)
 
     subscribeSocket = None
 
@@ -56,7 +57,9 @@ class PubSubNetwork:
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, str.encode(topicName))
 
         self.listeners[topicName].append(func)
-        
+
+    def get_session_id(self):
+        return self.sessionID        
 
 
     def start_threads(self):
@@ -177,6 +180,9 @@ def Publish(topic,subtype,datatype,data,meta=""):
 def SetShowLog(showIt):
     global showLog
     showLog = showIt
+
+def GetSessionId():
+    return pubsubNetwork.get_session_id()
 
 def NetworkRunning():
     return pubsubNetwork and pubsubNetwork.forwarderSubscriberRunning
