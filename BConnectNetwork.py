@@ -1,7 +1,8 @@
 import zmq,threading,time,traceback,json,random
+from time import sleep
 
 pubsubNetwork = None
-showLog = True
+showLog = False
 
 
 
@@ -20,6 +21,8 @@ class PubSubNetwork:
     sessionID = random.randint(1000000,9999999)
 
     subscribeSocket = None
+    subscriber_ok = False
+    forwarder_ok = False
 
     def __init__(self,subPort="5559",pubPort="5560",initialFilter=b"all",startThreads=True):
         self.forwarderPubPort = pubPort
@@ -36,8 +39,13 @@ class PubSubNetwork:
         print("b: %s" % self.forwarderSubPort)
         self.socket.connect("tcp://localhost:%s" % self.forwarderSubPort)
 
+    def wait_for_threads(self):
+        while not self.forwarder_ok or not self.subscriber_ok:
+            sleep(0.05) 
+
     # send data to the forwarder with a given topic
     def publish(self,topic,meta,messagedata):
+        self.wait_for_threads()
         #print("SEND:%s %s" % (topic, messagedata))
         if type(topic) is str:
             topic = str.encode(topic)
@@ -45,10 +53,12 @@ class PubSubNetwork:
             meta = str.encode(meta)
 
         self.socket.send_multipart([topic,meta,messagedata])
-        print("Sent....")
+        #print("Sent....")
         #self.socket.send_string( "%s %s" % (topic, messagedata))
 
     def add_listener(self,topicName, func):
+        self.wait_for_threads()
+        
         if (type(topicName) is bytes):
             topicName = str(topicName,"utf-8")
 
@@ -65,20 +75,24 @@ class PubSubNetwork:
     def start_threads(self):
         ## see: https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/pyzmq/devices/forwarder.html
         def thread_forwarder():
-            context = zmq.Context(1)
-            # Socket facing clients
-            frontend = context.socket(zmq.SUB)
-            frontend.bind("tcp://*:%s" % self.forwarderSubPort)
+            try:
+                context = zmq.Context(1)
+                # Socket facing clients
+                frontend = context.socket(zmq.SUB)
+                frontend.bind("tcp://*:%s" % self.forwarderSubPort)
 
-            frontend.setsockopt(zmq.SUBSCRIBE, b"")
-            # Socket facing services
-            backend = context.socket(zmq.PUB)
-            backend.bind("tcp://*:%s" % self.forwarderPubPort)
+                frontend.setsockopt(zmq.SUBSCRIBE, b"")
+                # Socket facing services
+                backend = context.socket(zmq.PUB)
+                backend.bind("tcp://*:%s" % self.forwarderPubPort)
 
-            zmq.device(zmq.FORWARDER, frontend, backend)
-            frontend.close()
-            backend.close()
-            context.term()
+                self.forwarder_ok = True
+                zmq.device(zmq.FORWARDER, frontend, backend)
+                frontend.close()
+                backend.close()
+                context.term()
+            except:
+                self.forwarder_ok = True
 
         def thread_forwarder_subscriber():
             # Socket to talk to server
@@ -88,10 +102,11 @@ class PubSubNetwork:
             self.subscribeSocket.connect ("tcp://localhost:%s" % self.forwarderPubPort)
             
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, self.initialFilter)
+            self.subscriber_ok = True
             while True:
                 info,meta,data = self.subscribeSocket.recv_multipart()
                 topic, subtype, datatype = str(info,"utf-8").split()
-                print("INCOMING topic:%s subtype:%s datatype:%s" % (topic,subtype,datatype))
+                #print("INCOMING topic:%s subtype:%s datatype:%s" % (topic,subtype,datatype))
                 meta = str(meta,"utf-8")
                 if meta =="":
                     meta=None
@@ -100,7 +115,7 @@ class PubSubNetwork:
 
                 if showLog:
                     print ("network: Topic:%s Subtype:%s dataType:%s"%(topic, subtype,datatype))
-                print("listeners %s" %self.listeners)
+                    print("listeners %s" %self.listeners)
                 if topic in self.listeners.keys():
                     print("--1")
                     topicListeners = self.listeners[topic]
