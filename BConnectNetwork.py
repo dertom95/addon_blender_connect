@@ -28,7 +28,7 @@ class PubSubNetwork:
         self.forwarderPubPort = pubPort
         self.forwarderSubPort = subPort
         self.initialFilter = initialFilter
-        print("init %s %s" %(initialFilter,startThreads))
+        #print("init %s %s" %(initialFilter,startThreads))
         self.initPublisherSocket()
         if startThreads:
             self.start_threads()
@@ -36,7 +36,7 @@ class PubSubNetwork:
     def initPublisherSocket(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
-        print("b: %s" % self.forwarderSubPort)
+        #print("b: %s" % self.forwarderSubPort)
         self.socket.connect("tcp://localhost:%s" % self.forwarderSubPort)
 
     def wait_for_threads(self):
@@ -98,7 +98,7 @@ class PubSubNetwork:
             # Socket to talk to server
             context = zmq.Context()
             self.subscribeSocket = context.socket(zmq.SUB)
-            print ("Collecting updates from server...%s" % self.forwarderSubPort)
+            #print ("Collecting updates from server...%s" % self.forwarderSubPort)
             self.subscribeSocket.connect ("tcp://localhost:%s" % self.forwarderPubPort)
             
             self.subscribeSocket.setsockopt(zmq.SUBSCRIBE, self.initialFilter)
@@ -117,11 +117,9 @@ class PubSubNetwork:
                     print ("network: Topic:%s Subtype:%s dataType:%s"%(topic, subtype,datatype))
                     print("listeners %s" %self.listeners)
                 if topic in self.listeners.keys():
-                    print("--1")
                     topicListeners = self.listeners[topic]
                     removeList = []
                     for l in topicListeners:
-                        print("--2")
                         
                         ## TODO: Find a better sanity test to see if the reference is valid. (What an insane sanity-check ;) )
                         # try:
@@ -134,7 +132,6 @@ class PubSubNetwork:
 
                         try:
                             if datatype == "text":
-                                print("--3")
                                 l(topic,subtype,meta,str(data,"utf-8"))
                             elif datatype == "json":
                                 jsonAsDict = json.loads(str(data,"utf-8"))
@@ -170,10 +167,10 @@ class PubSubNetwork:
 
 
 def StartNetwork(subPort="5559",pubPort="5560",initialFilter=b"",startThreads=True):
-    print("STARTING BConnect")
+    #print("STARTING BConnect")
     global pubsubNetwork
     if not pubsubNetwork:
-        print("ST%s %s" % (startThreads,initialFilter))
+        #print("ST%s %s" % (startThreads,initialFilter))
         pubsubNetwork = PubSubNetwork(subPort,pubPort,initialFilter,startThreads)
 
 def StopNetwork():
