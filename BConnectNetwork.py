@@ -3,6 +3,7 @@ try:
 except:
     import bpy,subprocess
     pybin = bpy.app.binary_path_python
+    subprocess.check_call([pybin, '-m', 'ensurepip'])
     subprocess.check_call([pybin, '-m', 'pip', 'install', 'pyzmq'])
     import zmq
 
