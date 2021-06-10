@@ -1,11 +1,31 @@
+def install_pip():
+    """Bootstrap pip and any dependencies into Blender's Python configuration"""
+    try:
+        import pip
+    except ImportError:
+        print("pip python package not found. Installing.")
+        try:
+            import ensurepip
+            ensurepip.bootstrap(upgrade=True, default_pip=True)
+        except ImportError:
+            print("pip cannot be configured or installed. ")
+
 try:
     import zmq
 except:
-    import bpy,subprocess
-    pybin = bpy.app.binary_path_python
-    subprocess.check_call([pybin, '-m', 'ensurepip'])
-    subprocess.check_call([pybin, '-m', 'pip', 'install', 'pyzmq'])
-    import zmq
+    try:
+        install_pip()
+        import pip
+        pip.main(["install","pyzmq"])
+        import zmq
+    except:
+        # old way
+        import bpy,subprocess
+        pybin = bpy.app.binary_path_python
+        subprocess.check_call([pybin, '-m', 'ensurepip'])
+        subprocess.check_call([pybin, '-m', 'pip', 'install', 'pyzmq'])
+        import zmq
+
 
 
 
