@@ -20,8 +20,8 @@ except:
         import zmq
     except:
         # old way
-        import bpy,subprocess
-        pybin = bpy.app.binary_path_python
+        import bpy,subprocess,sys
+        pybin = sys.executable
         subprocess.check_call([pybin, '-m', 'ensurepip'])
         subprocess.check_call([pybin, '-m', 'pip', 'install', 'pyzmq'])
         import zmq
